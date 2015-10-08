@@ -1,5 +1,5 @@
 /* Prebid.js v0.3.2 
-Updated : 2015-09-29 */
+Updated : 2015-10-08 */
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /** @module adaptermanger */
 
@@ -149,6 +149,7 @@ var AppNexusAdapter = function AppNexusAdapter() {
 		var placementId = utils.getBidIdParamater('placementId', bid.params);
 		var memberId = utils.getBidIdParamater('memberId', bid.params);
 		var inventoryCode = utils.getBidIdParamater('invCode', bid.params);
+		var query = utils.getBidIdParamater('query', bid.params);
 
 		//build our base tag, based on if we are http or https
 
@@ -173,10 +174,10 @@ var AppNexusAdapter = function AppNexusAdapter() {
 		}
 		//console.log(jptCall);
 
-		var targetingParams = '';
+		var targetingParams = utils.parseQueryStringParameters(query);
 
 		if (targetingParams) {
-			//don't append a & here, we have already done it at the end of the loop
+			//don't append a & here, we have already done it in parseQueryStringParameters
 			jptCall += targetingParams;
 		}
 
@@ -478,8 +479,6 @@ var CriteoAdapter = function CriteoAdapter() {
 						adResponse.bidderCode = 'criteo';
 
 						adResponse.keys = content.split(';');
-
-						bidmanager.addBidResponse(existingBid.placementCode, adResponse);
 					} else {
 						// Indicate an ad was not returned
 						adResponse = bidfactory.createBid(2);
@@ -1628,8 +1627,8 @@ function init(timeout, adUnitCodeArr) {
 	else{
 		cbTimeout = timeout;
 	}
-	
-	if (!isValidAdUnitSetting()) {
+
+	if (!isValidAdUnitSetting(adUnits)) {
 		utils.logMessage('No adUnits configured. No bids requested.');
 		return;
 	}
@@ -1975,7 +1974,7 @@ pbjs.getBidResponsesForAdUnitCode = function(adUnitCode) {
 };
 /**
  * Set query string targeting on adUnits specified. The logic for deciding query strings is described in the section Configure AdServer Targeting. Note that this function has to be called after all ad units on page are defined.
- * @param {array} [codeArr] an array of adUnitodes to set targeting for. 
+ * @param {array} [codeArr] an array of adUnitodes to set targeting for.
  * @alias module:pbjs.setTargetingForAdUnitsGPTAsync
  */
 pbjs.setTargetingForAdUnitsGPTAsync = function(codeArr) {
@@ -2024,7 +2023,7 @@ pbjs.setTargetingForAdUnitsGPTAsync = function(codeArr) {
  * Set query string targeting on all GPT ad units.
  * @alias module:pbjs.setTargetingForGPTAsync
  */
-pbjs.setTargetingForGPTAsync = function() {		
+pbjs.setTargetingForGPTAsync = function() {
 	pbjs.setTargetingForAdUnitsGPTAsync();
 };
 
@@ -2104,7 +2103,7 @@ pbjs.requestBidsForAdUnit = function(adUnitCode) {
 /**
  * Request bids for adUnits passed into function
  */
-pbjs.requestBidsForAdUnits = function(adUnitsObj) {
+pbjs.requestBidsForAdUnits = function(adUnitsObj, bidsBackHandler) {
 	if (!adUnitsObj || adUnitsObj.constructor !== Array) {
 		utils.logError('requestBidsForAdUnits must pass an array of adUnits');
 		return;
@@ -2112,6 +2111,9 @@ pbjs.requestBidsForAdUnits = function(adUnitsObj) {
 	resetBids();
 	var adUnitBackup = pbjs.adUnits.slice(0);
 	pbjs.adUnits = adUnitsObj;
+        if (typeof bidsBackHandler === objectType_function) {
+                bidmanager.addOneTimeCallback(bidsBackHandler);
+        }
 	init();
 	pbjs.adUnits = adUnitBackup;
 
@@ -2134,12 +2136,12 @@ pbjs.removeAdUnit = function(adUnitCode) {
 
 
 /**
- * Request bids ad-hoc. This function does not add or remove adUnits already configured. 
- * @param  {Object} requestObj 
+ * Request bids ad-hoc. This function does not add or remove adUnits already configured.
+ * @param  {Object} requestObj
  * @param {string[]} requestObj.adUnitCodes  adUnit codes to request. Use this or requestObj.adUnits
  * @param {object[]} requestObj.adUnits AdUnitObjects to request. Use this or requestObj.adUnitCodes
  * @param {number} [requestObj.timeout] Timeout for requesting the bids specified in milliseconds
- * @param {function} [requestObj.bidsBackHandler] Callback to execute when all the bid responses are back or the timeout hits. 
+ * @param {function} [requestObj.bidsBackHandler] Callback to execute when all the bid responses are back or the timeout hits.
  * @alias module:pbjs.requestBids
  */
 pbjs.requestBids = function(requestObj) {
@@ -2175,12 +2177,12 @@ pbjs.requestBids = function(requestObj) {
 
 		pbjs.adUnits = adUnitBackup;
 	}
-	
+
 };
 
 /**
- * 
- * Add adunit(s) 
+ *
+ * Add adunit(s)
  * @param {(string|string[])} Array of adUnits or single adUnit Object.
  * @alias module:pbjs.addAdUnits
  */
@@ -2294,6 +2296,18 @@ exports.tryAppendQueryString = function(existingUrl, key, value) {
 		return existingUrl += key + '=' + encodeURIComponent(value) + '&';
 	}
 	return existingUrl;
+};
+
+
+//parse a query string object passed in bid params
+//bid params should be an object such as {key: "value", key1 : "value1"}
+exports.parseQueryStringParameters = function(queryObj) {
+	var result = "";
+	for (var k in queryObj){
+		if (queryObj.hasOwnProperty(k))
+			result += k + "=" + encodeURIComponent(queryObj[k]) + "&";
+	}
+	return result;
 };
 
 //parse a GPT-Style General Size Array or a string like "300x250" into a format
@@ -2486,7 +2500,7 @@ exports.getPriceBucketString = function(cpm) {
 };
 
 /**
- * This function validates paramaters. 
+ * This function validates paramaters.
  * @param  {object[string]} paramObj          [description]
  * @param  {string[]} requiredParamsArr [description]
  * @return {bool}                   Bool if paramaters are valid
