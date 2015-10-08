@@ -71,7 +71,7 @@ function init(timeout, adUnitCodeArr) {
 		cbTimeout = timeout;
 	}
 
-	if (!isValidAdUnitSetting(adUnits)) {
+	if (!isValidAdUnitSetting()) {
 		utils.logMessage('No adUnits configured. No bids requested.');
 		return;
 	}
