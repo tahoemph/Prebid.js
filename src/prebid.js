@@ -71,7 +71,7 @@ function init(timeout, adUnitCodeArr) {
 		cbTimeout = timeout;
 	}
 
-	if (!isValidAdUnitSetting()) {
+	if (!isValidAdUnitSetting(adUnits)) {
 		utils.logMessage('No adUnits configured. No bids requested.');
 		return;
 	}
@@ -546,7 +546,7 @@ pbjs.requestBidsForAdUnit = function(adUnitCode) {
 /**
  * Request bids for adUnits passed into function
  */
-pbjs.requestBidsForAdUnits = function(adUnitsObj) {
+pbjs.requestBidsForAdUnits = function(adUnitsObj, bidsBackHandler) {
 	if (!adUnitsObj || adUnitsObj.constructor !== Array) {
 		utils.logError('requestBidsForAdUnits must pass an array of adUnits');
 		return;
@@ -554,6 +554,9 @@ pbjs.requestBidsForAdUnits = function(adUnitsObj) {
 	resetBids();
 	var adUnitBackup = pbjs.adUnits.slice(0);
 	pbjs.adUnits = adUnitsObj;
+        if (typeof bidsBackHandler === objectType_function) {
+                bidmanager.addOneTimeCallback(bidsBackHandler);
+        }
 	init();
 	pbjs.adUnits = adUnitBackup;
 
