@@ -103,7 +103,7 @@ var AppNexusAdapter = function AppNexusAdapter() {
 		jptCall = utils.tryAppendQueryString(jptCall, 'callback_uid', callbackId);
 
 		//disable PSAs here, as per RAD-503
-		jptCall = utils.tryAppendQueryString(jptCall, 'psa', '0');
+		// jptCall = utils.tryAppendQueryString(jptCall, 'psa', '0');
 		jptCall = utils.tryAppendQueryString(jptCall, 'id', placementId);
 		jptCall = utils.tryAppendQueryString(jptCall, 'member_id', memberId);
 		jptCall = utils.tryAppendQueryString(jptCall, 'code', inventoryCode);
@@ -123,7 +123,7 @@ var AppNexusAdapter = function AppNexusAdapter() {
 		}
 
 		//append referrer
-		jptCall = utils.tryAppendQueryString(jptCall, 'referrer', utils.getTopWindowUrl());
+		// jptCall = utils.tryAppendQueryString(jptCall, 'referrer', utils.getTopWindowUrl());
 
 
 		//remove the trailing "&"
